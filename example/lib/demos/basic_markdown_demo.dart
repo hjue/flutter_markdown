@@ -4,7 +4,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_highlight/flutter_highlight.dart';
+import 'package:flutter_highlight/themes/github.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:markdown/markdown.dart' as md;
 
 import '../shared/dropdown_menu.dart';
 import '../shared/markdown_demo_widget.dart';
@@ -101,6 +104,12 @@ class _BasicMarkdownDemoState extends State<BasicMarkdownDemo> {
                   data: snapshot.data!,
                   imageDirectory: 'https://raw.githubusercontent.com',
                   extensionSet: _extensionSet.value,
+                  builders: <String, MarkdownElementBuilder>{
+                    'h1': CenteredHeaderBuilder(),
+                    'h6': CenteredHeaderBuilder(),
+                    'pre': PreBuilder(),
+                    'code': CodeBuilder(),
+                  },
                   onTapLink: (String text, String? href, String title) =>
                       linkOnTapHandler(context, text, href, title),
                 ),
@@ -166,4 +175,55 @@ class _BasicMarkdownDemoState extends State<BasicMarkdownDemo> {
           )
         ],
       );
+}
+
+class CenteredHeaderBuilder extends MarkdownElementBuilder {
+  @override
+  Widget visitText(md.Text text, TextStyle? preferredStyle) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: <Widget>[
+        Text(text.text, style: preferredStyle),
+      ],
+    );
+  }
+}
+
+String language = '';
+
+class CodeBuilder extends MarkdownElementBuilder {
+  @override
+  void visitElementBefore(md.Element element) {
+    if (element.attributes['class'] != null) {
+      language = element.attributes['class']!.replaceAll('language-', '');
+    }
+    super.visitElementBefore(element);
+  }
+}
+
+class PreBuilder extends MarkdownElementBuilder {
+  @override
+  Widget visitText(md.Text text, TextStyle? preferredStyle) {
+    return HighlightView(
+      // The original code to be highlighted
+      text.text,
+
+      // Specify language
+      // It is recommended to give it a value for performance
+      // 这里language不能为空，否则会报错。如果需要自动识别语言，需要修改项目flutter_highlight
+      language: language,
+      // Specify highlight theme
+      // All available themes are listed in `themes` folder
+      theme: githubTheme,
+
+      // Specify padding
+      padding: EdgeInsets.all(12),
+
+      // Specify text style
+      // textStyle: TextStyle(
+      //   fontFamily: 'My awesome monospace font',
+      //   fontSize: 16,
+      // ),
+    );
+  }
 }
